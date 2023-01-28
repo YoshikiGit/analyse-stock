@@ -1,10 +1,11 @@
-import pandas as pd
-from bs4 import BeautifulSoup
-import urllib.request
-import requests
-import time
-from dataclasses import dataclass
 import sys
+import time
+import urllib.request
+from dataclasses import dataclass
+
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 
 
 @dataclass
