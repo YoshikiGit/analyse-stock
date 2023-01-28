@@ -21,63 +21,67 @@ class StockInfo:
         self.basic_info = basic_info
 
 
-class Main():
-    # 値が設定されていなければskip
-    def hyphen_check(self, targetStr):
-        if ("-" in targetStr):
+# 値が設定されていなければskip
+def hyphen_check(self, targetStr):
+    if ("-" in targetStr):
+        return False
+    return True
+# /hyphen_check
+
+
+def shape_format(self, targetStr):
+    shapedStr = targetStr.rstrip("倍")
+    shapedStr = shapedStr.replace(',', '')
+    return float(shapedStr)
+# 株をフィルタ
+
+
+def set_condition(self, basic_info, keyList):
+    # print(keyList)
+    # PER
+    if self.hyphen_check(basic_info[keyList[5]]):
+        if self.shape_format(basic_info[keyList[5]]) > 15:
+            print("×PER OUT")
             return False
-
-        return True
-    # /hyphen_check
-
-    def shape_format(self, targetStr):
-        shapedStr = targetStr.rstrip("倍")
-        shapedStr = shapedStr.replace(',', '')
-        return float(shapedStr)
-
-    # 株をフィルタ
-
-    def set_condition(self, basic_info, keyList):
-        # print(keyList)
-
-        # PER
-        if self.hyphen_check(basic_info[keyList[5]]):
-            if self.shape_format(basic_info[keyList[5]]) > 15:
-                print("×PER OUT")
-                return False
-        else:
+    else:
+        return False
+    # PBR
+    if self.hyphen_check(basic_info[keyList[7]]):
+        if self.shape_format(basic_info[keyList[7]]) > 1:
+            print("×PBR OUT")
             return False
-
-        # PBR
-        if self.hyphen_check(basic_info[keyList[7]]):
-            if self.shape_format(basic_info[keyList[7]]) > 1:
-                print("×PBR OUT")
-                return False
-
-        # 時価総額（300億以下）
-        if self.hyphen_check(basic_info[keyList[9]]):
-            if float(basic_info[keyList[9]].rstrip("百万円").replace(',', '')) > 30000:
-                print("×時価総額 OUT")
-                return False
-
-        # ROE
-        roe = self.shape_format(
-            basic_info[keyList[7]]) / self.shape_format(basic_info[keyList[5]])
-        if roe < 10 or 20 < roe:
+    # 時価総額（300億以下）
+    if self.hyphen_check(basic_info[keyList[9]]):
+        if float(basic_info[keyList[9]].rstrip("百万円").replace(',', '')) > 30000:
+            print("×時価総額 OUT")
             return False
+    # ROE
+    roe = self.shape_format(
+        basic_info[keyList[7]]) / self.shape_format(basic_info[keyList[5]])
+    if roe < 10 or 20 < roe:
+        return False
+    print("Good")
+    return True
+# /set_condition
 
-        print("Good")
-        return True
-
-    # /set_condition
-
-
-main = Main()
 
 # みん株URL
 MINKABU_URL = "https://minkabu.jp/stock/"
 CHANGE_LINE = '''
 '''
+
+target_matket = input("""
+    対象の市場を番号で選択
+    1：市場第一部（内国株）
+    2：市場第二部（内国株）
+    3：マザーズ（内国株）
+    4：JASDAQ(スタンダード・内国株）
+    5：JASDAQ(グロース・内国株 母数）
+    6：TOPIX
+""")
+
+if target_matket not in list(map(str, list(range(1, 7)))):
+    raise Exception('選択肢に該当する数字ではありません')
 
 try:
     # 銘柄コードの取得
@@ -89,21 +93,31 @@ try:
             codelist = pd.read_excel("./data_j.xls")
 
     # 各市場を整理
-    if sys.argv[0] == "mothers":
+    if target_matket == '1':
+        firstSectionCodeList = codelist.loc[codelist["市場・商品区分"]
+                                            == "市場第一部（内国株）"]
+
+    elif target_matket == '2':
+        secondSectionCodeList = codelist.loc[codelist["市場・商品区分"]
+                                             == "市場第二部（内国株）"]
+
+    elif target_matket == '3':
         print("===マザーズ（内国株） 母数 ===")
         mothersCodeList = codelist.loc[codelist["市場・商品区分"] == "マザーズ（内国株）"]
         print(len(mothersCodeList))
-    elif sys.argv[0] == "jasdaqs":
+
+    elif target_matket == '4':
         print("=== JASDAQ(スタンダード・内国株） 母数 ===")
         jasdaqStandardCodeList = codelist.loc[codelist["市場・商品区分"]
                                               == "JASDAQ(スタンダード・内国株）"]
 
-    elif sys.argv[0] == "jasdaqg":
+    elif target_matket == '5':
         print("=== JASDAQ(グロース・内国株 母数） ===")
-        print(len(jasdaqGrowthCodeList))
         jasdaqGrowthCodeList = codelist.loc[codelist["市場・商品区分"]
                                             == "JASDAQ(グロース・内国株）"]
-    elif sys.argv[0] == "topix":
+        print(len(jasdaqGrowthCodeList))
+
+    elif target_matket == '6':
         # TOPIXを整理
         topix100CodeList = codelist.loc[codelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70"])]
@@ -113,12 +127,6 @@ try:
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1"])]
         topixCodeList = codelist.loc[codelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1", "TOPIX Small 2"])]
-    elif sys.argv[0] == "tosyo1":
-        firstSectionCodeList = codelist.loc[codelist["市場・商品区分"]
-                                            == "市場第一部（内国株）"]
-    elif sys.argv[0] == "tosyo2":
-        secondSectionCodeList = codelist.loc[codelist["市場・商品区分"]
-                                             == "市場第二部（内国株）"]
 
     print(CHANGE_LINE)
 
