@@ -70,17 +70,26 @@ MINKABU_URL = "https://minkabu.jp/stock/"
 CHANGE_LINE = '''
 '''
 
-target_matket = input("""
+market_dict = {
+    '1': '市場第一部（内国株）',
+    '2': '市場第二部（内国株）',
+    '3': 'マザーズ（内国株）',
+    '4': 'JASDAQ(スタンダード・内国株）',
+    '5': 'JASDAQ(グロース・内国株 母数）',
+    '6': 'TOPIX',
+}
+
+target_market = input(f"""
     対象の市場を番号で選択
-    1：市場第一部（内国株）
-    2：市場第二部（内国株）
-    3：マザーズ（内国株）
-    4：JASDAQ(スタンダード・内国株）
-    5：JASDAQ(グロース・内国株 母数）
-    6：TOPIX
+    1：{market_dict['1']}
+    2：{market_dict['2']}
+    3：{market_dict['3']}
+    4：{market_dict['4']}
+    5：{market_dict['5']}
+    6：{market_dict['6']}
 """)
 
-if target_matket not in list(map(str, list(range(1, 7)))):
+if target_market not in market_dict:
     raise Exception('選択肢に該当する数字ではありません')
 
 try:
@@ -90,42 +99,43 @@ try:
     with urllib.request.urlopen(url) as u:
         with open('data_j.xls', 'bw') as o:
             o.write(u.read())
-            codelist = pd.read_excel("./data_j.xls")
+            xlsCodelist = pd.read_excel("./data_j.xls")
 
     # 各市場を整理
-    if target_matket == '1':
-        firstSectionCodeList = codelist.loc[codelist["市場・商品区分"]
-                                            == "市場第一部（内国株）"]
+    if target_market == '1':
+        firstSectionCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                               == "市場第一部（内国株）"]
 
-    elif target_matket == '2':
-        secondSectionCodeList = codelist.loc[codelist["市場・商品区分"]
-                                             == "市場第二部（内国株）"]
+    elif target_market == '2':
+        secondSectionCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                                == "市場第二部（内国株）"]
 
-    elif target_matket == '3':
+    elif target_market == '3':
         print("===マザーズ（内国株） 母数 ===")
-        mothersCodeList = codelist.loc[codelist["市場・商品区分"] == "マザーズ（内国株）"]
+        mothersCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                          == "マザーズ（内国株）"]
         print(len(mothersCodeList))
 
-    elif target_matket == '4':
+    elif target_market == '4':
         print("=== JASDAQ(スタンダード・内国株） 母数 ===")
-        jasdaqStandardCodeList = codelist.loc[codelist["市場・商品区分"]
-                                              == "JASDAQ(スタンダード・内国株）"]
+        jasdaqStandardCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                                 == "JASDAQ(スタンダード・内国株）"]
 
-    elif target_matket == '5':
+    elif target_market == '5':
         print("=== JASDAQ(グロース・内国株 母数） ===")
-        jasdaqGrowthCodeList = codelist.loc[codelist["市場・商品区分"]
-                                            == "JASDAQ(グロース・内国株）"]
+        jasdaqGrowthCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                               == "JASDAQ(グロース・内国株）"]
         print(len(jasdaqGrowthCodeList))
 
-    elif target_matket == '6':
+    elif target_market == '6':
         # TOPIXを整理
-        topix100CodeList = codelist.loc[codelist["規模区分"].isin(
+        topix100CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70"])]
-        topix500CodeList = codelist.loc[codelist["規模区分"].isin(
+        topix500CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400"])]
-        topix1000CodeList = codelist.loc[codelist["規模区分"].isin(
+        topix1000CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1"])]
-        topixCodeList = codelist.loc[codelist["規模区分"].isin(
+        topixCodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1", "TOPIX Small 2"])]
 
     print(CHANGE_LINE)
@@ -181,7 +191,7 @@ try:
 
                 listIndex = listIndex + 1
 
-            if main.set_condition(basic_info, keyList) == True:
+            if set_condition(basic_info, keyList) == True:
                 stockInfo = StockInfo(
                     topixCodeList.iloc[tmpIndex, 2], basic_info)
                 all_info.append(stockInfo)
