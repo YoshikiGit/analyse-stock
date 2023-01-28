@@ -1,4 +1,3 @@
-import sys
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -71,12 +70,10 @@ CHANGE_LINE = '''
 '''
 
 market_dict = {
-    '1': '市場第一部（内国株）',
-    '2': '市場第二部（内国株）',
-    '3': 'マザーズ（内国株）',
-    '4': 'JASDAQ(スタンダード・内国株）',
-    '5': 'JASDAQ(グロース・内国株 母数）',
-    '6': 'TOPIX',
+    '1': 'プライム市場',
+    '2': 'スタンダード市場',
+    '3': 'グロース市場',
+    '4': 'TOPIX',
 }
 
 target_market = input(f"""
@@ -85,8 +82,6 @@ target_market = input(f"""
     2：{market_dict['2']}
     3：{market_dict['3']}
     4：{market_dict['4']}
-    5：{market_dict['5']}
-    6：{market_dict['6']}
 """)
 
 if target_market not in market_dict:
@@ -103,31 +98,21 @@ try:
 
     # 各市場を整理
     if target_market == '1':
-        firstSectionCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                               == "市場第一部（内国株）"]
+        primeCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                        == "プライム（内国株式）"]
+        print(primeCodeList)
 
     elif target_market == '2':
-        secondSectionCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                                == "市場第二部（内国株）"]
+        standardCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                           == "スタンダード（内国株式）"]
 
     elif target_market == '3':
-        print("===マザーズ（内国株） 母数 ===")
-        mothersCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                          == "マザーズ（内国株）"]
-        print(len(mothersCodeList))
+        print("===グロース（内国株式） 母数 ===")
+        growthCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                         == "グロース（内国株式）"]
+        print(len(growthCodeList))
 
     elif target_market == '4':
-        print("=== JASDAQ(スタンダード・内国株） 母数 ===")
-        jasdaqStandardCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                                 == "JASDAQ(スタンダード・内国株）"]
-
-    elif target_market == '5':
-        print("=== JASDAQ(グロース・内国株 母数） ===")
-        jasdaqGrowthCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                               == "JASDAQ(グロース・内国株）"]
-        print(len(jasdaqGrowthCodeList))
-
-    elif target_market == '6':
         # TOPIXを整理
         topix100CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70"])]
