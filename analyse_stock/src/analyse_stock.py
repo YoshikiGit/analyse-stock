@@ -25,38 +25,38 @@ def hyphen_check(self, targetStr):
     if ("-" in targetStr):
         return False
     return True
-# /hyphen_check
 
 
 def shape_format(self, targetStr):
     shapedStr = targetStr.rstrip("倍")
     shapedStr = shapedStr.replace(',', '')
     return float(shapedStr)
+
 # 株をフィルタ
 
 
-def set_condition(self, basic_info, keyList):
-    # print(keyList)
+def set_condition(basic_info, key_list):
+    print(key_list)
     # PER
-    if self.hyphen_check(basic_info[keyList[5]]):
-        if self.shape_format(basic_info[keyList[5]]) > 15:
+    if hyphen_check(basic_info[key_list[5]]):
+        if shape_format(basic_info[key_list[5]]) > 15:
             print("×PER OUT")
             return False
     else:
         return False
     # PBR
-    if self.hyphen_check(basic_info[keyList[7]]):
-        if self.shape_format(basic_info[keyList[7]]) > 1:
+    if hyphen_check(basic_info[key_list[7]]):
+        if shape_format(basic_info[key_list[7]]) > 1:
             print("×PBR OUT")
             return False
     # 時価総額（300億以下）
-    if self.hyphen_check(basic_info[keyList[9]]):
-        if float(basic_info[keyList[9]].rstrip("百万円").replace(',', '')) > 30000:
+    if hyphen_check(basic_info[key_list[9]]):
+        if float(basic_info[key_list[9]].rstrip("百万円").replace(',', '')) > 30000:
             print("×時価総額 OUT")
             return False
     # ROE
-    roe = self.shape_format(
-        basic_info[keyList[7]]) / self.shape_format(basic_info[keyList[5]])
+    roe = shape_format(
+        basic_info[key_list[7]]) / shape_format(basic_info[key_list[5]])
     if roe < 10 or 20 < roe:
         return False
     print("Good")
@@ -87,6 +87,8 @@ target_market = input(f"""
 if target_market not in market_dict:
     raise Exception('選択肢に該当する数字ではありません')
 
+print(market_dict[str(target_market)] + "を選択")
+
 try:
     # 銘柄コードの取得
     # 東証から上場企業の一覧を取得
@@ -96,31 +98,30 @@ try:
             o.write(u.read())
             xlsCodelist = pd.read_excel("./data_j.xls")
 
-    # 各市場を整理
+    # 各市場をフィルタ
     if target_market == '1':
-        primeCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                        == "プライム（内国株式）"]
-        print(primeCodeList)
+        filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                            == "プライム（内国株式）"]
+        print(filterdMarketList)
 
     elif target_market == '2':
-        standardCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                           == "スタンダード（内国株式）"]
+        filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                            == "スタンダード（内国株式）"]
 
     elif target_market == '3':
         print("===グロース（内国株式） 母数 ===")
-        growthCodeList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
-                                         == "グロース（内国株式）"]
-        print(len(growthCodeList))
+        filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
+                                            == "グロース（内国株式）"]
 
     elif target_market == '4':
         # TOPIXを整理
-        topix100CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
+        '''topix100CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70"])]
         topix500CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400"])]
         topix1000CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
-            ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1"])]
-        topixCodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
+            ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1"])]'''
+        filterdMarketList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1", "TOPIX Small 2"])]
 
     print(CHANGE_LINE)
@@ -129,14 +130,13 @@ try:
 
     # 対象市場の期待株
     all_info = []
-    for index in topixCodeList.index:
+    for index in filterdMarketList.index:
 
-        url = MINKABU_URL + str(topixCodeList.iloc[tmpIndex, 1])
+        url = MINKABU_URL + str(filterdMarketList.iloc[tmpIndex, 1])
 
         if 0 <= tmpIndex <= 600:
             print("■アクセス先URL")
-            print(url)
-            print(CHANGE_LINE)
+            print(url + "\n")
 
             # 遅延でアクセス
             time.sleep(2)
@@ -146,39 +146,37 @@ try:
             soup = BeautifulSoup(html.content, "html.parser")
 
             # データ格納用のディクショナリを準備
-
             basic_info = {}
-            keyList = {}
+            key_list = {}
 
             # 全<li>要素を抽出
-            li_all = soup.find_all('li')
+            # li_all = soup.find_all('li')
+            reference_indicators = soup.select(
+                "[class='ly_col ly_colsize_6_fix']")
 
             listIndex = 0
+            key_list_index = 0
 
-            for li in li_all:
-                # <li>要素内の<dt>要素を抽出
-                dt = li.find('dt')
-                if dt is None:
-                    # <dt>要素がなければ処理不要
-                    continue
-                    # <li>要素内の<dd>要素を抽出（始値〜購入金額）
-                dd = li.find('dd')
+            for ri in reference_indicators:
+                th_all = ri.find_all('th')
+                td_all = ri.find_all('td')
 
-                # <dt><dd>要素から文字列を取得
-                key = dt.text
-                keyList[listIndex] = key
+                for i, th in enumerate(th_all):
+                    key = th.text
+                    key_list[key_list_index] = key
+                    indicator_value = td_all[i].text
 
-                # print(key)
-                value = dd.text
+                    # TOP情報をディクショナリに格納
+                    basic_info[key] = indicator_value
+                    key_list_index = key_list_index + 1
 
-                # TOP情報をディクショナリに格納
-                basic_info[key] = value
+            print(basic_info)
 
-                listIndex = listIndex + 1
-
-            if set_condition(basic_info, keyList) == True:
+            if set_condition(basic_info, key_list) == True:
                 stockInfo = StockInfo(
-                    topixCodeList.iloc[tmpIndex, 2], basic_info)
+                    filterdMarketList.iloc[tmpIndex, 2],
+                    basic_info,
+                )
                 all_info.append(stockInfo)
 
             tmpIndex = tmpIndex + 1
