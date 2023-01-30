@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 @dataclass
 class StockInfo:
     name: str
-    basic_info: {}
+    basic_info: dict
 
     # コンストラクタを定義
     def __init__(self, name, basic_info):
@@ -21,42 +21,47 @@ class StockInfo:
 
 
 # 値が設定されていなければskip
-def hyphen_check(self, targetStr):
+def hyphen_check(targetStr):
     if ("-" in targetStr):
         return False
     return True
 
 
-def shape_format(self, targetStr):
-    shapedStr = targetStr.rstrip("倍")
-    shapedStr = shapedStr.replace(',', '')
-    return float(shapedStr)
+def cleansing_data(basic_info):
+    for key in basic_info:
+        if '倍' in basic_info[key]:
+            basic_info[key] = basic_info[key].rstrip("倍")
+        elif '百万円':
+            basic_info[key] = basic_info[key].rstrip("百万円")
+        elif '円' in basic_info[key]:
+            basic_info[key] = basic_info[key].rstrip("円")
+        basic_info[key] = basic_info[key].replace(',', '')
+
 
 # 株をフィルタ
-
-
-def set_condition(basic_info, key_list):
-    print(key_list)
+def set_condition(basic_info):
     # PER
-    if hyphen_check(basic_info[key_list[5]]):
-        if shape_format(basic_info[key_list[5]]) > 15:
+    if hyphen_check(basic_info['PER(調整後)']):
+        if float(basic_info['PER(調整後)']) > 15:
             print("×PER OUT")
             return False
     else:
         return False
     # PBR
-    if hyphen_check(basic_info[key_list[7]]):
-        if shape_format(basic_info[key_list[7]]) > 1:
+    if hyphen_check(basic_info['PBR']):
+        if float(basic_info['PBR']) > 1:
             print("×PBR OUT")
             return False
     # 時価総額（300億以下）
-    if hyphen_check(basic_info[key_list[9]]):
-        if float(basic_info[key_list[9]].rstrip("百万円").replace(',', '')) > 30000:
+    if hyphen_check(basic_info['時価総額']):
+        if float(basic_info['時価総額']) > 30000:
             print("×時価総額 OUT")
             return False
     # ROE
-    roe = shape_format(
-        basic_info[key_list[7]]) / shape_format(basic_info[key_list[5]])
+    roe = (
+        basic_info['PBR']) / (basic_info['PER(調整後)'])
+    print("roe")
+    print(roe)
     if roe < 10 or 20 < roe:
         return False
     print("Good")
@@ -66,8 +71,6 @@ def set_condition(basic_info, key_list):
 
 # みん株URL
 MINKABU_URL = "https://minkabu.jp/stock/"
-CHANGE_LINE = '''
-'''
 
 market_dict = {
     '1': 'プライム市場',
@@ -109,7 +112,6 @@ try:
                                             == "スタンダード（内国株式）"]
 
     elif target_market == '3':
-        print("===グロース（内国株式） 母数 ===")
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "グロース（内国株式）"]
 
@@ -123,8 +125,6 @@ try:
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1"])]'''
         filterdMarketList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1", "TOPIX Small 2"])]
-
-    print(CHANGE_LINE)
 
     tmpIndex = 0
 
@@ -147,32 +147,31 @@ try:
 
             # データ格納用のディクショナリを準備
             basic_info = {}
-            key_list = {}
 
-            # 全<li>要素を抽出
-            # li_all = soup.find_all('li')
             reference_indicators = soup.select(
-                "[class='ly_col ly_colsize_6_fix']")
+                "[class='ly_vamd']")
 
-            listIndex = 0
             key_list_index = 0
 
             for ri in reference_indicators:
-                th_all = ri.find_all('th')
-                td_all = ri.find_all('td')
 
-                for i, th in enumerate(th_all):
-                    key = th.text
-                    key_list[key_list_index] = key
-                    indicator_value = td_all[i].text
+                th = ri.find('th')
+                td = ri.find('td')
 
-                    # TOP情報をディクショナリに格納
-                    basic_info[key] = indicator_value
-                    key_list_index = key_list_index + 1
+                if th == None or td == None:
+                    continue
+
+                key = th.text
+                indicator_value = td.text
+
+                # TOP情報をディクショナリに格納
+                basic_info[key] = indicator_value
+                key_list_index = key_list_index + 1
 
             print(basic_info)
+            cleansing_data(basic_info)
 
-            if set_condition(basic_info, key_list) == True:
+            if set_condition(basic_info) == True:
                 stockInfo = StockInfo(
                     filterdMarketList.iloc[tmpIndex, 2],
                     basic_info,
@@ -180,7 +179,7 @@ try:
                 all_info.append(stockInfo)
 
             tmpIndex = tmpIndex + 1
-            print(CHANGE_LINE)
+            print("\n")
 
     if len(all_info) != 0:
         copy_text = ""
