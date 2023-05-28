@@ -39,7 +39,7 @@ def cleansing_data(basic_info):
 
 
 # 株をフィルタ
-def set_condition(basic_info):
+def filter_by_condition(basic_info):
     # PER
     if hyphen_check(basic_info['PER(調整後)']):
         if float(basic_info['PER(調整後)']) > 15:
@@ -69,8 +69,6 @@ def set_condition(basic_info):
 
 
 def _write_csv(all_info):
-    data = []
-
     with open('output.csv', 'w', newline='') as csvfile:
         header = [['社名', 'url', '前日終値', '始値', '高値',
                    '安値', '配当利回り', '単元株数', 'PER(調整後)', 'PSR', 'PBR', '出来高', '時価総額', '発行済株数', '株主優待', '購入金額']]
@@ -83,8 +81,7 @@ def _write_csv(all_info):
             for value in stock_info.basic_info.values():
                 tmp_data.append(value)
 
-            data.append(tmp_data)
-            writer.writerows(data)
+            writer.writerows([tmp_data])
 
 
 # みん株URL
@@ -123,88 +120,72 @@ try:
     if target_market == '1':
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "プライム（内国株式）"]
-        print(filterdMarketList)
-
     elif target_market == '2':
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "スタンダード（内国株式）"]
-
     elif target_market == '3':
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "グロース（内国株式）"]
-
     elif target_market == '4':
         # TOPIXを整理
-        '''topix100CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
-            ["TOPIX Core30",  "TOPIX Large70"])]
-        topix500CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
-            ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400"])]
-        topix1000CodeList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
-            ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1"])]'''
         filterdMarketList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
             ["TOPIX Core30",  "TOPIX Large70",  "TOPIX Mid400", "TOPIX Small 1", "TOPIX Small 2"])]
 
-    tmpIndex = 0
-
     # 対象市場の期待株
     all_info = []
-    for index in filterdMarketList.index:
-        # if len(all_info) > 0:
+    for index, val in enumerate(filterdMarketList.index):
+        # if len(all_info) > 5:
         #     break
 
-        url = MINKABU_URL + str(filterdMarketList.iloc[tmpIndex, 1])
+        url = MINKABU_URL + str(filterdMarketList.iloc[index, 1])
 
-        if 0 <= tmpIndex <= 600:
-            print("■アクセス先URL")
-            print(url + "\n")
+        print("■アクセス先URL")
+        print(url + "\n")
 
-            # 遅延でアクセス
-            time.sleep(2)
-            html = requests.get(url)
+        # 遅延でアクセス
+        time.sleep(2)
+        html = requests.get(url)
 
-            # BeautifulSoupのHTMLパーサーを生成
-            soup = BeautifulSoup(html.content, "html.parser")
+        # BeautifulSoupのHTMLパーサーを生成
+        soup = BeautifulSoup(html.content, "html.parser")
 
-            # データ格納用のディクショナリを準備
-            basic_info = {}
+        # データ格納用のディクショナリを準備
+        basic_info = {}
 
-            reference_indicators = soup.select(
-                "[class='ly_vamd']")
+        reference_indicators = soup.select(
+            "[class='ly_vamd']")
 
-            key_list_index = 0
+        key_list_index = 0
 
-            for ri in reference_indicators:
+        for ri in reference_indicators:
 
-                th = ri.find('th')
-                td = ri.find('td')
+            th = ri.find('th')
+            td = ri.find('td')
 
-                if th == None or td == None:
-                    continue
+            if th == None or td == None:
+                continue
 
-                key = th.text
-                indicator_value = td.text
+            key = th.text
+            indicator_value = td.text
 
-                # TOP情報をディクショナリに格納
-                basic_info[key] = indicator_value
-                key_list_index = key_list_index + 1
+            # TOP情報をディクショナリに格納
+            basic_info[key] = indicator_value
+            key_list_index = key_list_index + 1
 
-            print(basic_info)
-            cleansing_data(basic_info)
+        print(basic_info)
 
-            if set_condition(basic_info) == True:
-                stockInfo = StockInfo(
-                    url,
-                    filterdMarketList.iloc[tmpIndex, 2],
-                    basic_info,
-                )
-                print("check2")
-                all_info.append(stockInfo)
+        cleansing_data(basic_info)
 
-            tmpIndex = tmpIndex + 1
-            print("\n")
+        if filter_by_condition(basic_info) == True:
+            stockInfo = StockInfo(
+                url,
+                filterdMarketList.iloc[index, 2],
+                basic_info,
+            )
+            all_info.append(stockInfo)
 
     if len(all_info) != 0:
-        print("完了しました")
+        print("完了")
         print("===== all_info =====")
         print(all_info)
         # CSVファイルにデータを書き込む
