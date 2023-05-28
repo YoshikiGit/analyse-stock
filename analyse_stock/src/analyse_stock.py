@@ -39,7 +39,7 @@ def cleansing_data(basic_info):
 
 
 # 株をフィルタ
-def set_condition(basic_info):
+def filter_by_condition(basic_info):
     # PER
     if hyphen_check(basic_info['PER(調整後)']):
         if float(basic_info['PER(調整後)']) > 15:
@@ -69,8 +69,6 @@ def set_condition(basic_info):
 
 
 def _write_csv(all_info):
-    data = []
-
     with open('output.csv', 'w', newline='') as csvfile:
         header = [['社名', 'url', '前日終値', '始値', '高値',
                    '安値', '配当利回り', '単元株数', 'PER(調整後)', 'PSR', 'PBR', '出来高', '時価総額', '発行済株数', '株主優待', '購入金額']]
@@ -83,8 +81,7 @@ def _write_csv(all_info):
             for value in stock_info.basic_info.values():
                 tmp_data.append(value)
 
-            data.append(tmp_data)
-            writer.writerows(data)
+            writer.writerows([tmp_data])
 
 
 # みん株URL
@@ -123,16 +120,12 @@ try:
     if target_market == '1':
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "プライム（内国株式）"]
-        print(filterdMarketList)
-
     elif target_market == '2':
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "スタンダード（内国株式）"]
-
     elif target_market == '3':
         filterdMarketList = xlsCodelist.loc[xlsCodelist["市場・商品区分"]
                                             == "グロース（内国株式）"]
-
     elif target_market == '4':
         # TOPIXを整理
         filterdMarketList = xlsCodelist.loc[xlsCodelist["規模区分"].isin(
@@ -141,7 +134,7 @@ try:
     # 対象市場の期待株
     all_info = []
     for index, val in enumerate(filterdMarketList.index):
-        # if len(all_info) > 0:
+        # if len(all_info) > 5:
         #     break
 
         url = MINKABU_URL + str(filterdMarketList.iloc[index, 1])
@@ -180,11 +173,10 @@ try:
             key_list_index = key_list_index + 1
 
         print(basic_info)
-        print('\n')
 
         cleansing_data(basic_info)
 
-        if set_condition(basic_info) == True:
+        if filter_by_condition(basic_info) == True:
             stockInfo = StockInfo(
                 url,
                 filterdMarketList.iloc[index, 2],
