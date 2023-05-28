@@ -1,3 +1,4 @@
+import csv
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -9,13 +10,12 @@ from bs4 import BeautifulSoup
 
 @dataclass
 class StockInfo:
+    url: str
     name: str
     basic_info: dict
 
-    # コンストラクタを定義
-    def __init__(self, name, basic_info):
-
-        # メンバ
+    def __init__(self, url, name, basic_info):
+        self.url = url
         self.name = name
         self.basic_info = basic_info
 
@@ -59,14 +59,32 @@ def set_condition(basic_info):
             return False
     # ROE
     roe = (
-        basic_info['PBR']) / (basic_info['PER(調整後)'])
-    print("roe")
-    print(roe)
-    if roe < 10 or 20 < roe:
+        float(basic_info['PBR'])) / float((basic_info['PER(調整後)'])) * 100
+
+    if roe < 10:
+        print("×ROE OUT")
         return False
     print("Good")
     return True
-# /set_condition
+
+
+def _write_csv(all_info):
+    data = []
+
+    with open('output.csv', 'w', newline='') as csvfile:
+        header = [['社名', 'url', '前日終値', '始値', '高値',
+                   '安値', '配当利回り', '単元株数', 'PER(調整後)', 'PSR', 'PBR', '出来高', '時価総額', '発行済株数', '株主優待', '購入金額']]
+        writer = csv.writer(csvfile)
+        writer.writerows(header)
+        for stock_info in all_info:
+            tmp_data = []
+            tmp_data.append(stock_info.name)
+            tmp_data.append(stock_info.url)
+            for value in stock_info.basic_info.values():
+                tmp_data.append(value)
+
+            data.append(tmp_data)
+            writer.writerows(data)
 
 
 # みん株URL
@@ -131,6 +149,8 @@ try:
     # 対象市場の期待株
     all_info = []
     for index in filterdMarketList.index:
+        # if len(all_info) > 0:
+        #     break
 
         url = MINKABU_URL + str(filterdMarketList.iloc[tmpIndex, 1])
 
@@ -173,19 +193,22 @@ try:
 
             if set_condition(basic_info) == True:
                 stockInfo = StockInfo(
+                    url,
                     filterdMarketList.iloc[tmpIndex, 2],
                     basic_info,
                 )
+                print("check2")
                 all_info.append(stockInfo)
 
             tmpIndex = tmpIndex + 1
             print("\n")
 
     if len(all_info) != 0:
-        copy_text = ""
         print("完了しました")
         print("===== all_info =====")
         print(all_info)
+        # CSVファイルにデータを書き込む
+        _write_csv(all_info)
 
     else:
         print("候補が存在しませんでした。")
