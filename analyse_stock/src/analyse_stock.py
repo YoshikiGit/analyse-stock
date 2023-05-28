@@ -137,9 +137,12 @@ try:
         # if len(all_info) > 5:
         #     break
 
+        if len(str(filterdMarketList.iloc[index, 1])) != 4:
+            continue
+
         url = MINKABU_URL + str(filterdMarketList.iloc[index, 1])
 
-        print("■アクセス先URL")
+        print("\n" + "■アクセス先URL")
         print(url + "\n")
 
         # 遅延でアクセス
