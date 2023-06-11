@@ -1,4 +1,5 @@
 import csv
+from datetime import date, timedelta
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -29,12 +30,15 @@ def hyphen_check(targetStr):
 
 def cleansing_data(basic_info):
     for key in basic_info:
+
         if '倍' in basic_info[key]:
             basic_info[key] = basic_info[key].rstrip("倍")
-        elif '百万円':
+        elif '百万円' in basic_info[key]:
             basic_info[key] = basic_info[key].rstrip("百万円")
         elif '円' in basic_info[key]:
             basic_info[key] = basic_info[key].rstrip("円")
+        elif '株' in basic_info[key]:
+            basic_info[key] = basic_info[key].rstrip("株")
         basic_info[key] = basic_info[key].replace(',', '')
 
 
@@ -53,10 +57,10 @@ def filter_by_condition(basic_info):
             print("×PBR OUT")
             return False
     # 時価総額（300億以下）
-    if hyphen_check(basic_info['時価総額']):
-        if float(basic_info['時価総額']) > 30000:
-            print("×時価総額 OUT")
-            return False
+    # if hyphen_check(basic_info['時価総額']):
+    #    if float(basic_info['時価総額']) > 30000:
+    #        print("×時価総額 OUT")
+    #        return False
     # ROE
     roe = (
         float(basic_info['PBR'])) / float((basic_info['PER(調整後)'])) * 100
@@ -64,6 +68,16 @@ def filter_by_condition(basic_info):
     if roe < 10:
         print("×ROE OUT")
         return False
+
+    # 前日の日付を計算
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%m/%d')
+    per_day_money = float(
+        basic_info[f'前日終値（{yesterday_str}）']) * float(basic_info['出来高'])
+    if per_day_money < 1000000000:
+        print('×1日に動いた額out')
+        return False
+
     print("Good")
     return True
 
@@ -71,7 +85,7 @@ def filter_by_condition(basic_info):
 def _write_csv(all_info):
     with open('output.csv', 'w', newline='') as csvfile:
         header = [['社名', 'url', '前日終値', '始値', '高値',
-                   '安値', '配当利回り', '単元株数', 'PER(調整後)', 'PSR', 'PBR', '出来高', '時価総額', '発行済株数', '株主優待', '購入金額']]
+                   '安値', '配当利回り', '単元株数（株）', 'PER(調整後)', 'PSR', 'PBR', '出来高（株）', '時価総額', '発行済株数（株）', '株主優待', '購入金額']]
         writer = csv.writer(csvfile)
         writer.writerows(header)
         for stock_info in all_info:
