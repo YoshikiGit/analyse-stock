@@ -31,7 +31,6 @@ def hyphen_check(targetStr):
 def cleansing_data(basic_info):
     closing_price_key = ""
     for key in basic_info:
-        print(key)
         if "倍" in basic_info[key]:
             basic_info[key] = basic_info[key].rstrip("倍")
         elif "百万円" in basic_info[key]:
