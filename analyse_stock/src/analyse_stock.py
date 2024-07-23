@@ -64,6 +64,7 @@ def filter_by_condition(basic_info):
     # PBR
     if hyphen_check(basic_info["PBR"]):
         if float(basic_info["PBR"]) > 1:
+            print("PBR：×")
             return False
         else:
             print("PBR：○")
@@ -88,7 +89,7 @@ def filter_by_condition(basic_info):
     # 前日の日付を計算
     per_day_money = float(basic_info["前日終値"]) * float(basic_info["出来高"])
     if per_day_money < 1000000000:
-        print("×1日に動いた額out")
+        print("1日に動いた額：×")
         return False
 
     print("Good")
@@ -101,7 +102,6 @@ def _write_csv(all_info):
             [
                 "社名",
                 "url",
-                "前日終値",
                 "始値",
                 "高値",
                 "安値",
@@ -115,6 +115,7 @@ def _write_csv(all_info):
                 "発行済株数（株）",
                 "株主優待",
                 "購入金額",
+                "前日終値",
             ]
         ]
         writer = csv.writer(csvfile)
