@@ -21,6 +21,12 @@ class StockInfo:
         self.basic_info = basic_info
 
 
+def hyphen_to_number(targetStr):
+    if "-" in targetStr:
+        return "0"
+    return targetStr
+
+
 # 値が設定されていなければskip
 def hyphen_check(targetStr):
     if "-" in targetStr:
@@ -59,6 +65,7 @@ def filter_by_condition(basic_info):
         else:
             print("PER：○")
     else:
+        print("PER：×")
         return False
 
     # PBR
@@ -78,7 +85,7 @@ def filter_by_condition(basic_info):
     #        return False
 
     # ROE
-    roe = (float(basic_info["PBR"])) / float((basic_info["PER(調整後)"])) * 100
+    roe = (float(basic_info["PBR"])) / float(basic_info["PER(調整後)"]) * 100
 
     if roe < 10:
         print("ROE：×")
@@ -87,7 +94,10 @@ def filter_by_condition(basic_info):
         print("ROE：○")
 
     # 前日の日付を計算
-    per_day_money = float(basic_info["前日終値"]) * float(basic_info["出来高"])
+    per_day_money = float(basic_info["前日終値"]) * float(
+        hyphen_to_number(basic_info["出来高"])
+    )
+
     if per_day_money < 1000000000:
         print("1日に動いた額：×")
         return False
