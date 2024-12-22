@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 
 
@@ -218,7 +220,12 @@ try:
 
         # 遅延でアクセス
         time.sleep(2)
-        html = requests.get(url)
+        session = requests.Session()
+        retry = Retry(connect=3, backoff_factor=1)
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        html = session.get(url)
 
         # BeautifulSoupのHTMLパーサーを生成
         soup = BeautifulSoup(html.content, "html.parser")
