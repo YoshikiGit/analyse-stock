@@ -1,5 +1,5 @@
 import csv
-from datetime import date, timedelta
+import re
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -9,10 +9,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
+import yaml
 
 
 @dataclass
-class StockInfo:
+class StockInfoClass:
     url: str
     name: str
     basic_info: dict
@@ -59,9 +60,15 @@ def cleansing_data(basic_info):
 
 # 条件に合う株をフィルタ
 def filter_by_condition(basic_info):
+    with open('../config/per_pbr_by_industry.yml', 'r') as yml:
+        config = yaml.safe_load(yml)
+
+    industry = basic_info["業種"]
+
     # PER
     if hyphen_check(basic_info["PER(調整後)"]):
-        if float(basic_info["PER(調整後)"]) > 15:
+        industry_per_threshold = config.get(industry, {}).get("加重_PER_倍", 15)
+        if float(basic_info["PER(調整後)"]) > industry_per_threshold:
             print("PER：×")
             return False
         else:
@@ -72,7 +79,8 @@ def filter_by_condition(basic_info):
 
     # PBR
     if hyphen_check(basic_info["PBR"]):
-        if float(basic_info["PBR"]) > 1:
+        industry_pbr_threshold = config.get(industry, {}).get("加重_PBR_倍", 1)
+        if float(basic_info["PBR"]) > industry_pbr_threshold:
             print("PBR：×")
             return False
         else:
@@ -87,9 +95,10 @@ def filter_by_condition(basic_info):
     #        return False
 
     # ROE
+
     roe = (float(basic_info["PBR"])) / float(basic_info["PER(調整後)"]) * 100
 
-    if roe < 10:
+    if roe < config.get(industry, {}).get("ROE", 10):
         print("ROE：×")
         return False
     else:
@@ -232,7 +241,8 @@ try:
 
         # データ格納用のディクショナリを準備
         basic_info = {}
-
+        industry_type = soup.find('a', href=re.compile(r'/stock/stocksitemap/\d+'))
+        basic_info["業種"] = industry_type.get_text()
         reference_indicators = soup.select("[class='ly_vamd']")
 
         key_list_index = 0
@@ -257,12 +267,12 @@ try:
         print(basic_info)
 
         if filter_by_condition(basic_info) == True:
-            stockInfo = StockInfo(
+            stockInfoClass = StockInfoClass(
                 url,
                 filterdMarketList.iloc[index, 2],
                 basic_info,
             )
-            all_info.append(stockInfo)
+            all_info.append(stockInfoClass)
 
     if len(all_info) != 0:
         print("完了")
