@@ -67,7 +67,7 @@ def filter_by_condition(basic_info):
 
     # PER
     if hyphen_check(basic_info["PER(調整後)"]):
-        industry_per_threshold = config.get(industry, {}).get("加重_PER_倍", 15)
+        industry_per_threshold = config.get(industry, {}).get("単純_PER_倍", 15)
         if float(basic_info["PER(調整後)"]) > industry_per_threshold:
             print("PER：×")
             return False
@@ -79,7 +79,7 @@ def filter_by_condition(basic_info):
 
     # PBR
     if hyphen_check(basic_info["PBR"]):
-        industry_pbr_threshold = config.get(industry, {}).get("加重_PBR_倍", 1)
+        industry_pbr_threshold = config.get(industry, {}).get("単純_PBR_倍", 1)
         if float(basic_info["PBR"]) > industry_pbr_threshold:
             print("PBR：×")
             return False
