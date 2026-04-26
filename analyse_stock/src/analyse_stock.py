@@ -49,13 +49,17 @@ def cleansing_data(basic_info):
         elif "株" in basic_info[key]:
             basic_info[key] = basic_info[key].rstrip("株")
 
-        if "前日終値" in key:
+        if "前日終値" in key or "前日取引価格" in key:
             closing_price_key = key
 
         basic_info[key] = basic_info[key].replace(",", "")
 
+    if closing_price_key == "":
+        raise ValueError(f"前日終値のキーが見つかりませんでした。取得キー: {list(basic_info.keys())}")
+
     basic_info["前日終値"] = basic_info[closing_price_key]
-    del basic_info[closing_price_key]
+    if closing_price_key != "前日終値":
+        del basic_info[closing_price_key]
 
 
 # 条件に合う株をフィルタ
@@ -117,8 +121,8 @@ def filter_by_condition(basic_info):
     return True
 
 
-def _write_csv(all_info):
-    with open("output.csv", "w", newline="") as csvfile:
+def _write_csv(all_info, market):
+    with open(f"output_{market}.csv", "w", newline="") as csvfile:
         header = [
             [
                 "社名",
@@ -234,7 +238,8 @@ try:
         adapter = HTTPAdapter(max_retries=retry)
         session.mount('http://', adapter)
         session.mount('https://', adapter)
-        html = session.get(url)
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        html = session.get(url, headers=headers)
 
         # BeautifulSoupのHTMLパーサーを生成
         soup = BeautifulSoup(html.content, "html.parser")
@@ -242,6 +247,9 @@ try:
         # データ格納用のディクショナリを準備
         basic_info = {}
         industry_type = soup.find('a', href=re.compile(r'/stock/stocksitemap/\d+'))
+        if industry_type is None:
+            print("業種が取得できませんでした。スキップします。")
+            continue
         basic_info["業種"] = industry_type.get_text()
         reference_indicators = soup.select("[class='ly_vamd']")
 
@@ -279,7 +287,7 @@ try:
         print("===== all_info =====")
         print(all_info)
         # CSVファイルにデータを書き込む
-        _write_csv(all_info)
+        _write_csv(all_info, market_dict[str(target_market)])
 
     else:
         print("候補が存在しませんでした。")
