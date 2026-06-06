@@ -1,4 +1,5 @@
 import csv
+import random
 import re
 import time
 import urllib.request
@@ -63,7 +64,7 @@ def cleansing_data(basic_info):
 
 
 # 条件に合う株をフィルタ
-def filter_by_condition(basic_info):
+def filter_by_condition(target_market, basic_info):
     with open('../config/per_pbr_by_industry.yml', 'r') as yml:
         config = yaml.safe_load(yml)
 
@@ -113,7 +114,7 @@ def filter_by_condition(basic_info):
         hyphen_to_number(basic_info["出来高"])
     )
 
-    if per_day_money < 1000000000:
+    if target_market == "1" and per_day_money < 1000000000:
         print("1日に動いた額：×")
         return False
 
@@ -154,6 +155,11 @@ def _write_csv(all_info, market):
 
             writer.writerows([tmp_data])
 
+def random_wait(min_sec, max_sec):
+    """ランダムな時間待機する"""
+    wait_time = random.uniform(min_sec, max_sec)
+    time.sleep(wait_time)
+    return wait_time
 
 # みん株URL
 MINKABU_URL = "https://minkabu.jp/stock/"
@@ -232,7 +238,8 @@ try:
         print(url + "\n")
 
         # 遅延でアクセス
-        time.sleep(2)
+        random_wait(1, 4)
+
         session = requests.Session()
         retry = Retry(connect=3, backoff_factor=1)
         adapter = HTTPAdapter(max_retries=retry)
@@ -274,7 +281,7 @@ try:
         print("Done：cleansing_data")
         print(basic_info)
 
-        if filter_by_condition(basic_info) == True:
+        if filter_by_condition(target_market, basic_info) == True:
             stockInfoClass = StockInfoClass(
                 url,
                 filterdMarketList.iloc[index, 2],
