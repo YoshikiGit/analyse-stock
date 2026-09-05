@@ -1,0 +1,5 @@
+google-adk
+yfinance>=0.2.40
+pandas>=2.2.3
+numpy>=2.2.4
+requests>=2.33.0
