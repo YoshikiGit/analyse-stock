@@ -164,7 +164,7 @@ def random_wait(min_sec, max_sec):
 # みん株URL
 MINKABU_URL = "https://minkabu.jp/stock/"
 # 日本取引所グループURL
-JPX_URL = "https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xls"
+JPX_URL = "https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xlsx"
 
 market_dict = {
     "1": "プライム市場",
@@ -192,10 +192,11 @@ try:
     # 銘柄コードの取得
     # 東証から上場企業の一覧を取得
     with urllib.request.urlopen(JPX_URL) as u:
-        with open("data_j.xls", "bw") as o:
+        with open("data_j.xlsx", "bw") as o:
             o.write(u.read())
-            xlsCodelist = pd.read_excel("./data_j.xls")
+            xlsCodelist = pd.read_excel("./data_j.xlsx")
 
+    print("銘柄コードの取得完了")
     # 各市場をフィルタ
     if target_market == "1":
         filterdMarketList = xlsCodelist.loc[
